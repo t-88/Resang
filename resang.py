@@ -55,9 +55,9 @@ class ParallelExpr(Stmt):
         super().__init__("ParallelExpr")    
         self.rhs = rhs
         self.lhs = lhs        
-class ProgrameExpr(Stmt):
+class ProgramExpr(Stmt):
     def __init__(self):
-        super().__init__("ProgrameExpr")    
+        super().__init__("ProgramExpr")    
         self.body = []
 class NumberLiteral(Stmt):
     def __init__(self,value):
@@ -65,12 +65,11 @@ class NumberLiteral(Stmt):
         self.value = value
 
 
-
 def print_ast(ast,depth):
     if(ast == None):
         return
     print("   " * depth,ast.type,ast.value if ast.type == "NumberLiteral" else "")
-    if(ast.type == "ProgrameExpr"):
+    if(ast.type == "ProgramExpr"):
         for child in ast.body:
             print_ast(child,depth+1)
     elif (ast.type == "SeriesExpr" or ast.type == "ParallelExpr"):
@@ -95,9 +94,6 @@ def tokenize(line : str) -> list:
             PANIC(f"char {char} not recognized")
 
     return tokens
-
-
-
 class Parser:
     def __init__(self):
         self.tokens =[]    
@@ -164,12 +160,46 @@ class Parser:
 
     def parse(self,tokens):
         self.tokens = tokens
-        programe = ProgrameExpr()
+        program = ProgramExpr()
         while(not end(self.tokens)):
-            programe.body.append(self.parse_expr())
-        print_ast(programe,0)
+            program.body.append(self.parse_expr())
+        return program
+class Interpreter:
+    def __init__(self):
+        pass
+
+    def eval_serie(self,ast):
+        lhs = self.eval(ast.lhs)
+        rhs = self.eval(ast.rhs)
+        return lhs + rhs
+    def eval_parallel(self,ast):
+        lhs = self.eval(ast.lhs)
+        rhs = self.eval(ast.rhs)
+        return 1/(1/lhs + 1/rhs)
+    def eval_program(self,ast):
+        last_evaluated   = None
+        for child in ast.body:
+            last_evaluated = self.eval(child)
+        return last_evaluated
+    def eval(self,ast):
+        if ast.type == "ProgramExpr":
+            return self.eval_program(ast)
+        elif ast.type == "SeriesExpr":
+            return self.eval_serie(ast)       
+        elif ast.type == "ParallelExpr":
+            return self.eval_parallel(ast)  
+        elif ast.type == "NumberLiteral":
+            return ast.value
+        else:
+            PANIC("[Error] Expr eval not implemented")   
+
+
+    
 
 
 
 parser = Parser()
-parser.parse(list(tokenize(lines[0])))
+ast = parser.parse(list(tokenize(lines[0])))
+interpreter = Interpreter()
+output = interpreter.eval(ast)
+print(output)
