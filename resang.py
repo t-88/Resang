@@ -1,19 +1,25 @@
 import sys
+import enum
 
 def PANIC(msg):
     print(msg)
     exit(1)
+class State(enum.Enum):
+    File = 1
+    Repl = 2
 
+
+state = State.Repl
 
 # taking care of input
-if(len(sys.argv) < 2):
-    PANIC("[Error] no file given")
+if(len(sys.argv) == 2):
+    state = State.File
+    fileName = sys.argv[1]
+    lines = []
+    with open(fileName,"r") as f:
+        for line in f:
+            lines.append(line.strip())
 
-fileName = sys.argv[1]
-lines = []
-with open(fileName,"r") as f:
-    for line in f:
-        lines.append(line.strip())
 
 
 def is_number(char):
@@ -193,13 +199,23 @@ class Interpreter:
         else:
             PANIC("[Error] Expr eval not implemented")   
 
-
     
 
 
 
 parser = Parser()
-ast = parser.parse(list(tokenize(lines[0])))
 interpreter = Interpreter()
-output = interpreter.eval(ast)
-print(output)
+
+if state == State.File:
+    for line in lines:
+        ast = parser.parse(list(tokenize(line)))
+        output = interpreter.eval(ast)
+        print(line,"=>",round(output,2))
+else:
+    print("Resang Interpreter:")
+    while(True):
+        line = input("> ")
+        ast = parser.parse(list(tokenize(line)))
+        output = interpreter.eval(ast)
+        if(type(output) == float or type(output) == int): 
+            print(round(output,2))
